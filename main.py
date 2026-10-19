@@ -8,7 +8,8 @@ from bidi.algorithm import get_display
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.metrics import dp
+from kivy.core.window import Window
+from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -19,6 +20,7 @@ try:
     from plyer import tts
 except ImportError:
     tts = None
+
 
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkF3rIIfM8GLC7W-ClklJAb5UZPHZpJYyt-FJyNLACifLaxdYMFqPIUmspM-GqNR7u4y-c5pOg19Zd/pub?output=csv"
 
@@ -32,97 +34,155 @@ class EnglishApp(App):
         self.word_index = 0
         self.loading = False
 
-        layout = BoxLayout(
+        self.root_layout = BoxLayout(
             orientation="vertical",
-            padding=dp(18),
-            spacing=dp(12),
+            padding=[dp(12), dp(10), dp(12), dp(10)],
+            spacing=dp(8),
         )
 
-        title = Label(
+        self.title_label = Label(
             text="Learn English",
-            font_size="28sp",
+            font_size=sp(28),
             size_hint_y=None,
-            height=dp(55),
+            height=dp(48),
             color=get_color_from_hex("#4B2E83"),
         )
-        layout.add_widget(title)
+        self.root_layout.add_widget(self.title_label)
 
         self.word_label = Label(
             text="Press Refresh Words to load vocabulary",
-            font_size="25sp",
+            font_size=sp(25),
             halign="center",
             valign="middle",
             color=get_color_from_hex("#222222"),
         )
         self.word_label.bind(size=self.fit_text)
-        layout.add_widget(self.word_label)
+        self.root_layout.add_widget(self.word_label)
 
         self.meaning_label = Label(
             text="",
             font_name=ARABIC_FONT,
-            font_size="24sp",
+            font_size=sp(24),
             halign="center",
             valign="middle",
             color=get_color_from_hex("#287A45"),
         )
         self.meaning_label.bind(size=self.fit_text)
-        layout.add_widget(self.meaning_label)
+        self.root_layout.add_widget(self.meaning_label)
 
         self.status_label = Label(
             text="Ready",
-            font_size="14sp",
+            font_size=sp(14),
             size_hint_y=None,
-            height=dp(30),
+            height=dp(26),
         )
-        layout.add_widget(self.status_label)
+        self.root_layout.add_widget(self.status_label)
 
         navigation = BoxLayout(
-            spacing=dp(10),
+            spacing=dp(8),
+            size_hint_y=None,
+            height=dp(50),
+        )
+
+        self.previous_button = Button(
+            text="Previous",
+            font_size=sp(17),
+        )
+        self.previous_button.bind(on_release=self.show_previous)
+
+        self.next_button = Button(
+            text="Next",
+            font_size=sp(17),
+        )
+        self.next_button.bind(on_release=self.show_next)
+
+        navigation.add_widget(self.previous_button)
+        navigation.add_widget(self.next_button)
+        self.root_layout.add_widget(navigation)
+
+        actions = BoxLayout(
+            spacing=dp(8),
             size_hint_y=None,
             height=dp(54),
         )
-        previous_button = Button(text="Previous", font_size="18sp")
-        previous_button.bind(on_release=self.show_previous)
-        next_button = Button(text="Next", font_size="18sp")
-        next_button.bind(on_release=self.show_next)
-        navigation.add_widget(previous_button)
-        navigation.add_widget(next_button)
-        layout.add_widget(navigation)
 
-        actions = BoxLayout(
-            spacing=dp(10),
-            size_hint_y=None,
-            height=dp(58),
-        )
-        speak_button = Button(
+        self.speak_button = Button(
             text="Speak",
-            font_size="17sp",
+            font_size=sp(16),
             background_color=get_color_from_hex("#D9C8F2"),
             color=get_color_from_hex("#24123D"),
         )
-        speak_button.bind(on_release=self.speak_word)
+        self.speak_button.bind(on_release=self.speak_word)
 
-        refresh_button = Button(
+        self.refresh_button = Button(
             text="Refresh Words",
-            font_size="17sp",
+            font_size=sp(16),
             background_color=get_color_from_hex("#CDEED8"),
             color=get_color_from_hex("#173D26"),
         )
-        refresh_button.bind(on_release=self.refresh_words)
+        self.refresh_button.bind(on_release=self.refresh_words)
 
-        actions.add_widget(speak_button)
-        actions.add_widget(refresh_button)
-        layout.add_widget(actions)
-        return layout
+        actions.add_widget(self.speak_button)
+        actions.add_widget(self.refresh_button)
+        self.root_layout.add_widget(actions)
+
+        # Adjust text and spacing for narrow phone screens.
+        Window.bind(size=self.on_window_resize)
+        Clock.schedule_once(self.on_window_resize, 0)
+
+        return self.root_layout
+
+    def on_window_resize(self, *_):
+        if not hasattr(self, "root_layout"):
+            return
+
+        width = self.root_layout.width
+
+        if width < dp(340):
+            self.root_layout.padding = [dp(8), dp(6), dp(8), dp(6)]
+            self.root_layout.spacing = dp(5)
+            self.title_label.font_size = sp(24)
+            self.word_label.font_size = sp(21)
+            self.meaning_label.font_size = sp(21)
+            self.previous_button.font_size = sp(15)
+            self.next_button.font_size = sp(15)
+            self.speak_button.font_size = sp(14)
+            self.refresh_button.font_size = sp(14)
+        elif width < dp(420):
+            self.root_layout.padding = [dp(12), dp(8), dp(12), dp(8)]
+            self.root_layout.spacing = dp(7)
+            self.title_label.font_size = sp(26)
+            self.word_label.font_size = sp(23)
+            self.meaning_label.font_size = sp(22)
+            self.previous_button.font_size = sp(16)
+            self.next_button.font_size = sp(16)
+            self.speak_button.font_size = sp(15)
+            self.refresh_button.font_size = sp(15)
+        else:
+            self.root_layout.padding = [dp(18), dp(12), dp(18), dp(12)]
+            self.root_layout.spacing = dp(10)
+            self.title_label.font_size = sp(28)
+            self.word_label.font_size = sp(25)
+            self.meaning_label.font_size = sp(24)
+            self.previous_button.font_size = sp(18)
+            self.next_button.font_size = sp(18)
+            self.speak_button.font_size = sp(17)
+            self.refresh_button.font_size = sp(17)
 
     def fit_text(self, label, size):
         label.text_size = size
 
     def show_message(self, title, message):
+        popup_label = Label(
+            text=message,
+            halign="center",
+            valign="middle",
+            text_size=(Window.width * 0.78, None),
+        )
         popup = Popup(
             title=title,
-            content=Label(text=message, halign="center", valign="middle"),
-            size_hint=(0.88, 0.42),
+            content=popup_label,
+            size_hint=(0.88, 0.45),
         )
         popup.open()
 
