@@ -17,7 +17,7 @@ try:
 except ImportError:
     tts = None
 
-# سنضع هنا رابط Google Sheets المنشور بصيغة CSV لاحقًا.
+# Add the published Google Sheets CSV URL here later.
 SHEET_CSV_URL = "PASTE_YOUR_GOOGLE_SHEETS_CSV_URL_HERE"
 
 
@@ -44,7 +44,7 @@ class EnglishApp(App):
         layout.add_widget(title)
 
         self.word_label = Label(
-            text="اضغط على «تجديد القائمة» لتحميل الكلمات",
+            text="Press Refresh Words to load vocabulary",
             font_size="25sp",
             halign="center",
             valign="middle",
@@ -64,7 +64,7 @@ class EnglishApp(App):
         layout.add_widget(self.meaning_label)
 
         self.status_label = Label(
-            text="جاهز",
+            text="Ready",
             font_size="14sp",
             size_hint_y=None,
             height=dp(30),
@@ -76,9 +76,9 @@ class EnglishApp(App):
             size_hint_y=None,
             height=dp(54),
         )
-        previous_button = Button(text="السابق", font_size="18sp")
+        previous_button = Button(text="Previous", font_size="18sp")
         previous_button.bind(on_release=self.show_previous)
-        next_button = Button(text="التالي", font_size="18sp")
+        next_button = Button(text="Next", font_size="18sp")
         next_button.bind(on_release=self.show_next)
         navigation.add_widget(previous_button)
         navigation.add_widget(next_button)
@@ -90,7 +90,7 @@ class EnglishApp(App):
             height=dp(58),
         )
         speak_button = Button(
-            text="نطق الكلمة",
+            text="Speak",
             font_size="17sp",
             background_color=get_color_from_hex("#D9C8F2"),
             color=get_color_from_hex("#24123D"),
@@ -98,7 +98,7 @@ class EnglishApp(App):
         speak_button.bind(on_release=self.speak_word)
 
         refresh_button = Button(
-            text="تجديد القائمة",
+            text="Refresh Words",
             font_size="17sp",
             background_color=get_color_from_hex("#CDEED8"),
             color=get_color_from_hex("#173D26"),
@@ -127,14 +127,14 @@ class EnglishApp(App):
 
         if not SHEET_CSV_URL.startswith("https://docs.google.com/"):
             self.show_message(
-                "إعداد رابط الجدول",
-                "سنضع رابط Google Sheets المنشور بصيغة CSV في المتغير "
+                "Set Spreadsheet URL",
+                "Add the published Google Sheets CSV URL to the "
                 "SHEET_CSV_URL داخل ملف main.py.",
             )
             return
 
         self.loading = True
-        self.status_label.text = "جارٍ تحميل الكلمات..."
+        self.status_label.text = "Loading words..."
         threading.Thread(target=self.download_words, daemon=True).start()
 
     def download_words(self):
@@ -159,7 +159,7 @@ class EnglishApp(App):
                     continue
 
                 if row_number == 0 and english.lower() in (
-                    "english", "word", "الكلمة", "الكلمة الإنجليزية"
+                    "english", "word", "word"
                 ):
                     continue
 
@@ -167,8 +167,8 @@ class EnglishApp(App):
 
             if not words:
                 raise ValueError(
-                    "لم أجد كلمات. اجعل العمود الأول للكلمات الإنجليزية "
-                    "والثاني للمعاني العربية."
+                    "No words found. Set the first column to English words "
+                    "and the second column to meanings."
                 )
 
             Clock.schedule_once(lambda dt: self.finish_loading(words, None), 0)
@@ -182,22 +182,22 @@ class EnglishApp(App):
         self.loading = False
 
         if error:
-            self.status_label.text = "تعذّر تحميل الكلمات"
+            self.status_label.text = "Could not load words"
             self.show_message(
-                "مشكلة في التحميل",
-                "تحقق من اتصال الإنترنت ورابط الجدول وإعدادات مشاركته.\n\n"
+                "Loading Error",
+                "Check your internet connection, spreadsheet URL, and sharing settings.\n\n"
                 + error,
             )
             return
 
         self.words = words
         self.word_index = 0
-        self.status_label.text = f"تم تحميل {len(words)} كلمة"
+        self.status_label.text = f"Loaded {len(words)} words"
         self.display_current_word()
 
     def display_current_word(self):
         if not self.words:
-            self.word_label.text = "لا توجد كلمات محمّلة"
+            self.word_label.text = "No words loaded"
             self.meaning_label.text = ""
             return
 
@@ -205,7 +205,7 @@ class EnglishApp(App):
         self.word_label.text = word["english"]
         self.meaning_label.text = word["arabic"]
         self.status_label.text = (
-            f"الكلمة {self.word_index + 1} من {len(self.words)}"
+            f"Word {self.word_index + 1} of {len(self.words)}"
         )
 
     def show_previous(self, *_):
@@ -220,20 +220,20 @@ class EnglishApp(App):
 
     def speak_word(self, *_):
         if not self.words:
-            self.show_message("لا توجد كلمة", "حمّل قائمة الكلمات أولًا.")
+            self.show_message("No Word", "Load the word list first.")
             return
 
         if tts is None:
             self.show_message(
-                "النطق غير متاح",
-                "خدمة النطق غير متاحة على هذا الجهاز.",
+                "Speech Unavailable",
+                "Text-to-speech is not available on this device.",
             )
             return
 
         try:
             tts.speak(self.words[self.word_index]["english"])
         except Exception as error:
-            self.show_message("تعذّر النطق", str(error))
+            self.show_message("Speech Error", str(error))
 
 
 if __name__ == "__main__":
