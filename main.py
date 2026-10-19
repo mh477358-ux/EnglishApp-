@@ -3,6 +3,9 @@ import io
 import threading
 from urllib.request import Request, urlopen
 
+import arabic_reshaper
+from bidi.algorithm import get_display
+
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.metrics import dp
@@ -17,8 +20,9 @@ try:
 except ImportError:
     tts = None
 
-# Add the published Google Sheets CSV URL here later.
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkF3rIIfM8GLC7W-ClklJAb5UZPHZpJYyt-FJyNLACifLaxdYMFqPIUmspM-GqNR7u4y-c5pOg19Zd/pub?output=csv"
+
+ARABIC_FONT = "fonts/NotoNaskhArabic-Regular.ttf"
 
 
 class EnglishApp(App):
@@ -55,6 +59,7 @@ class EnglishApp(App):
 
         self.meaning_label = Label(
             text="",
+            font_name=ARABIC_FONT,
             font_size="24sp",
             halign="center",
             valign="middle",
@@ -128,8 +133,7 @@ class EnglishApp(App):
         if not SHEET_CSV_URL.startswith("https://docs.google.com/"):
             self.show_message(
                 "Set Spreadsheet URL",
-                "Add the published Google Sheets CSV URL to the "
-                "SHEET_CSV_URL داخل ملف main.py.",
+                "Add the published Google Sheets CSV URL in main.py.",
             )
             return
 
@@ -159,7 +163,7 @@ class EnglishApp(App):
                     continue
 
                 if row_number == 0 and english.lower() in (
-                    "english", "word", "word"
+                    "english", "word",
                 ):
                     continue
 
@@ -167,8 +171,8 @@ class EnglishApp(App):
 
             if not words:
                 raise ValueError(
-                    "No words found. Set the first column to English words "
-                    "and the second column to meanings."
+                    "No words found. Put English words in the first column "
+                    "and Arabic meanings in the second column."
                 )
 
             Clock.schedule_once(lambda dt: self.finish_loading(words, None), 0)
@@ -203,7 +207,11 @@ class EnglishApp(App):
 
         word = self.words[self.word_index]
         self.word_label.text = word["english"]
-        self.meaning_label.text = word["arabic"]
+
+        # Shape Arabic letters and arrange them for right-to-left display.
+        shaped_arabic = arabic_reshaper.reshape(word["arabic"])
+        self.meaning_label.text = get_display(shaped_arabic)
+
         self.status_label.text = (
             f"Word {self.word_index + 1} of {len(self.words)}"
         )
