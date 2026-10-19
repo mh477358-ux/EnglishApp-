@@ -18,7 +18,7 @@ except ImportError:
     tts = None
 
 # Add the published Google Sheets CSV URL here later.
-SHEET_CSV_URL = "PASTE_YOUR_GOOGLE_SHEETS_CSV_URL_HERE"
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkF3rIIfM8GLC7W-ClklJAb5UZPHZpJYyt-FJyNLACifLaxdYMFqPIUmspM-GqNR7u4y-c5pOg19Zd/pub?output=csv"
 
 
 class EnglishApp(App):
