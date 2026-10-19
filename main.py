@@ -1,7 +1,10 @@
 import csv
 import io
+import ssl
 import threading
 from urllib.request import Request, urlopen
+
+import certifi
 
 import arabic_reshaper
 from bidi.algorithm import get_display
@@ -207,7 +210,8 @@ class EnglishApp(App):
                 SHEET_CSV_URL,
                 headers={"User-Agent": "EnglishVocabularyApp/1.0"},
             )
-            with urlopen(request, timeout=20) as response:
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+            with urlopen(request, timeout=20, context=ssl_context) as response:
                 csv_text = response.read().decode("utf-8-sig")
 
             rows = list(csv.reader(io.StringIO(csv_text)))
